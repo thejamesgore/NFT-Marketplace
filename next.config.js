@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    appDir: false,
+const nextConfig = {}
+
+module.exports = {
+  reactStrictMode: true,
+  images: {
+    domains: ['ipfs.infura.io'],
   },
 }
-
-module.exports = nextConfig
