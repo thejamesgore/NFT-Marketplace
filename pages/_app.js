@@ -10,7 +10,7 @@ export default function App({ Component, pageProps }) {
       <div className="dark:bg-nft-dark bg-white min-h-screen">
         <Navbar />
         <Component {...pageProps} />
-        <h1>Footer </h1>
+        <Footer />
       </div>
 
       <Script
