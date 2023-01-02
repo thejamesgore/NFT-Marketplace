@@ -36,7 +36,7 @@ const Footer = () => {
               alt="logo"
             />
             <p className=" dark:text-white text-nft-dark font-semibold text-lg ml-1">
-              CryptoKet
+              Site Title
             </p>
           </div>
           <p className="font-poppins dark:text-white text-nft-black-1 font-semibold text-base mt-6">
@@ -60,7 +60,7 @@ const Footer = () => {
 
         <div className="flex-1 flexBetweenStart flex-wrap ml-10 md:ml-0 md:mt-8">
           <FooterLinks
-            heading="CryptoKet"
+            heading="Site Title"
             items={['Explore', 'How it Works', 'Contact Us']}
           />
           <FooterLinks
