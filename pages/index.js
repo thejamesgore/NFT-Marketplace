@@ -82,7 +82,7 @@ function Home() {
                       layout="fill"
                       objectFit="contain"
                       alt="leftArrow"
-                      className={theme === 'light' && 'filter invert'}
+                      className={theme === 'light' ? 'filter invert' : null}
                     />
                   </div>
                   <div
@@ -96,7 +96,7 @@ function Home() {
                       layout="fill"
                       objectFit="contain"
                       alt="leftArrow"
-                      className={theme === 'light' && 'filter invert'}
+                      className={theme === 'light' ? 'filter invert' : null}
                     />
                   </div>
                 </>

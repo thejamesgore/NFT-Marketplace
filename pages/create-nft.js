@@ -9,6 +9,7 @@ import images from '../assets'
 import { NFTContext } from '../context/NFTContext'
 
 const CreateNFT = () => {
+  const router = useRouter()
   const theme = useTheme()
   const [fileUrl, setFileUrl] = useState(null)
   const [formInput, setFormInput] = useState({
@@ -16,7 +17,7 @@ const CreateNFT = () => {
     name: '',
     description: '',
   })
-  const { uploadToIPFS } = useContext(NFTContext)
+  const { uploadToIPFS, createNFT } = useContext(NFTContext)
 
   const onDrop = useCallback(async (acceptedFile) => {
     const url = await uploadToIPFS(acceptedFile[0])
@@ -119,7 +120,7 @@ const CreateNFT = () => {
             btnName="Create Item"
             btnType="primary"
             classStyles="rounded-xl"
-            handleClick={() => {}}
+            handleClick={() => createNFT(formInput, fileUrl, router)}
           />
         </div>
       </div>
