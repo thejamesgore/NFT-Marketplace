@@ -11,6 +11,7 @@ const fetchContract = (signerOrProvider) =>
 
 const projectId = process.env.NEXT_PUBLIC_IPFS_PROJECT_ID
 const projectSecret = process.env.NEXT_PUBLIC_API_KEY_SECRET
+
 const auth = `Basic ${Buffer.from(`${projectId}:${projectSecret}`).toString(
   'base64'
 )}`
@@ -33,7 +34,7 @@ export const NFTProvider = ({ children }) => {
 
   useEffect(() => {
     checkIfWalletIsConnected()
-    createSale('test', '0.025')
+    createSale('test', '0.25')
   }, [])
 
   //   working
@@ -79,28 +80,36 @@ export const NFTProvider = ({ children }) => {
 
     try {
       const added = await client.add(data)
-      const url = `https://${subdomain}/ipfs/${added.path}`
+      const url = `${subdomain}/ipfs/${added.path}`
 
       await createSale(url, price)
       router.push('/')
     } catch (error) {
-      console.log('Error creating NFT', error)
+      console.log('Error creating NFT >>', error)
     }
   }
 
   const createSale = async (url, formInputPrice, isReselling, id) => {
     const web3Modal = new Web3Modal()
-
     const connection = await web3Modal.connect()
-
     const provider = new ethers.providers.Web3Provider(connection)
-
     const signer = provider.getSigner()
 
     const price = ethers.utils.parseUnits(formInputPrice, 'ether')
     const contract = fetchContract(signer)
 
-    console.log(contract)
+    const listingPrice = await contract.getListingPrice()
+
+    // const transaction = !isReselling
+    //   ? await contract.createToken(url, price, {
+    //       value: listingPrice.toString(),
+    //     })
+    //   : await contract.resellToken(id, price, {
+    //       value: listingPrice.toString(),
+    //     })
+
+    // setIsLoadingNFT(true)
+    // await transaction.wait()
   }
 
   const fetchNFTs = async () => {

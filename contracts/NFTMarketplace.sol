@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -7,14 +7,16 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "hardhat/console.sol";
 
-// Author: ryann254
-contract NFTMarketplace2 is ERC721URIStorage {
+contract NFTMarketplace is ERC721URIStorage {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIds;
     Counters.Counter private _itemsSold;
 
-    uint256 listingPrice = 0.025 ether;
+    uint256 listingPrice = 0.01 ether;
+
+    uint256 ownerCommissionPercentage = 15;
+    uint256 creatorCommissionPercentage = 1000 - ownerCommissionPercentage;
 
     address payable owner;
 
@@ -36,15 +38,39 @@ contract NFTMarketplace2 is ERC721URIStorage {
         bool sold
     );
 
-    constructor() ERC721("Ryan Tokens", "RATT") {
+    constructor() ERC721("JSG Token", "JSG") {
         owner = payable(msg.sender);
     }
 
-    function updateListingPrice(uint256 _listingPrice) public payable {
+    function getOwnerShare(uint256 x) private view returns (uint256) {
+        return (x / 1000) * ownerCommissionPercentage;
+    }
+
+    function getCreatorShare(uint256 x) private view returns (uint256) {
+        return (x / 1000) * creatorCommissionPercentage;
+    }
+
+    function updateOwnerCommissionPercentage(
+        uint _ownerCommissionPercentage
+    ) public payable {
         require(
             owner == msg.sender,
             "Only marketplace owner can update the listing price"
         );
+
+        ownerCommissionPercentage = _ownerCommissionPercentage;
+    }
+
+    function getOwnerCommissionPercentage() public view returns (uint256) {
+        return ownerCommissionPercentage;
+    }
+
+    function updateListingPrice(uint _listingPrice) public payable {
+        require(
+            owner == msg.sender,
+            "Only marketplace owner can update the listing price"
+        );
+
         listingPrice = _listingPrice;
     }
 
@@ -55,7 +81,7 @@ contract NFTMarketplace2 is ERC721URIStorage {
     function createToken(
         string memory tokenURI,
         uint256 price
-    ) public payable returns (uint256) {
+    ) public payable returns (uint) {
         _tokenIds.increment();
 
         uint256 newTokenId = _tokenIds.current();
@@ -69,7 +95,7 @@ contract NFTMarketplace2 is ERC721URIStorage {
     }
 
     function createMarketItem(uint256 tokenId, uint256 price) private {
-        require(price > 0, "Price must be atleast 1");
+        require(price > 0, "Price must be at least 1");
         require(
             msg.value == listingPrice,
             "Price must be equal to listing price"
@@ -97,7 +123,7 @@ contract NFTMarketplace2 is ERC721URIStorage {
     function resellToken(uint256 tokenId, uint256 price) public payable {
         require(
             idToMarketItem[tokenId].owner == msg.sender,
-            "Only item owner can perfom this operation"
+            "Only Item Owner can perform this operation"
         );
         require(
             msg.value == listingPrice,
@@ -115,11 +141,12 @@ contract NFTMarketplace2 is ERC721URIStorage {
     }
 
     function createMarketSale(uint256 tokenId) public payable {
-        uint256 price = idToMarketItem[tokenId].price;
+        uint price = idToMarketItem[tokenId].price;
+        address payable creator = idToMarketItem[tokenId].seller;
 
         require(
             msg.value == price,
-            "Please submit the asking price in order to complete the purchase"
+            "Please submit the asking price to complete the purchase"
         );
 
         idToMarketItem[tokenId].owner = payable(msg.sender);
@@ -131,19 +158,20 @@ contract NFTMarketplace2 is ERC721URIStorage {
         _transfer(address(this), msg.sender, tokenId);
 
         payable(owner).transfer(listingPrice);
-        payable(idToMarketItem[tokenId].seller).transfer(msg.value);
+        payable(owner).transfer(getOwnerShare(msg.value));
+        payable(creator).transfer(getCreatorShare(msg.value));
     }
 
     function fetchMarketItems() public view returns (MarketItem[] memory) {
-        uint256 itemCount = _tokenIds.current();
-        uint256 unsoldItemCount = _tokenIds.current() - _itemsSold.current();
-        uint256 currentIndex = 0;
+        uint itemCount = _tokenIds.current();
+        uint unsoldItemCount = _tokenIds.current() - _itemsSold.current();
+        uint currentIndex = 0;
 
         MarketItem[] memory items = new MarketItem[](unsoldItemCount);
 
-        for (uint256 i = 0; i < itemCount; i++) {
+        for (uint i = 0; i < itemCount; i++) {
             if (idToMarketItem[i + 1].owner == address(this)) {
-                uint256 currentId = i + 1;
+                uint currentId = i + 1;
 
                 MarketItem storage currentItem = idToMarketItem[currentId];
 
@@ -156,12 +184,12 @@ contract NFTMarketplace2 is ERC721URIStorage {
         return items;
     }
 
-    function fetchMyNFTs() public view returns (MarketItem[] memory) {
-        uint256 totalItemCount = _tokenIds.current();
-        uint256 itemCount = 0;
-        uint256 currentIndex = 0;
+    function fetchMyItems() public view returns (MarketItem[] memory) {
+        uint totalItemCount = _tokenIds.current();
+        uint itemCount = 0;
+        uint currentIndex = 0;
 
-        for (uint256 i = 0; i < totalItemCount; i++) {
+        for (uint i = 0; i < totalItemCount; i++) {
             if (idToMarketItem[i + 1].owner == msg.sender) {
                 itemCount += 1;
             }
@@ -169,9 +197,9 @@ contract NFTMarketplace2 is ERC721URIStorage {
 
         MarketItem[] memory items = new MarketItem[](itemCount);
 
-        for (uint256 i = 0; i < totalItemCount; i++) {
+        for (uint i = 0; i < totalItemCount; i++) {
             if (idToMarketItem[i + 1].owner == msg.sender) {
-                uint256 currentId = i + 1;
+                uint currentId = i + 1;
 
                 MarketItem storage currentItem = idToMarketItem[currentId];
 
@@ -180,15 +208,16 @@ contract NFTMarketplace2 is ERC721URIStorage {
                 currentIndex += 1;
             }
         }
+
         return items;
     }
 
     function fetchItemsListed() public view returns (MarketItem[] memory) {
-        uint256 totalItemCount = _tokenIds.current();
-        uint256 itemCount = 0;
-        uint256 currentIndex = 0;
+        uint totalItemCount = _tokenIds.current();
+        uint itemCount = 0;
+        uint currentIndex = 0;
 
-        for (uint256 i = 0; i < totalItemCount; i++) {
+        for (uint i = 0; i < totalItemCount; i++) {
             if (idToMarketItem[i + 1].seller == msg.sender) {
                 itemCount += 1;
             }
@@ -196,9 +225,9 @@ contract NFTMarketplace2 is ERC721URIStorage {
 
         MarketItem[] memory items = new MarketItem[](itemCount);
 
-        for (uint256 i = 0; i < totalItemCount; i++) {
+        for (uint i = 0; i < totalItemCount; i++) {
             if (idToMarketItem[i + 1].seller == msg.sender) {
-                uint256 currentId = i + 1;
+                uint currentId = i + 1;
 
                 MarketItem storage currentItem = idToMarketItem[currentId];
 
@@ -207,6 +236,7 @@ contract NFTMarketplace2 is ERC721URIStorage {
                 currentIndex += 1;
             }
         }
+
         return items;
     }
 }
